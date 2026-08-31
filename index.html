@@ -1,1 +1,1369 @@
+<!DOCTYPE html>
+<html lang="es">
 
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>SICTEC - Matriz Consolidada</title>
+
+    <!-- Librerías para generar y descargar el Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #4D93D9;
+            --secondary: #A6C9EC;
+            --bg: #F4F6F7;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: "Segoe UI", Tahoma, sans-serif;
+            color: #333333;
+            background: var(--bg);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #FFFFFF;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            padding-bottom: 10px;
+            color: #2B579A;
+            font-size: 1.5em;
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #F0F4F8;
+            border-radius: 6px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .control-group label {
+            color: #2B579A;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+
+        input[type="text"] {
+            padding: 8px;
+            font-size: 13px;
+            border: 1px solid #CCCCCC;
+            border-radius: 4px;
+        }
+
+        .buttons {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            color: #FFFFFF;
+            font-weight: bold;
+            background: #4D93D9;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #2B579A;
+        }
+
+        button:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+
+        button.success {
+            background: #27AE60;
+        }
+
+        .table-responsive {
+            max-height: 600px;
+            margin-bottom: 40px;
+            overflow-x: auto;
+            border: 1px solid #CCCCCC;
+        }
+
+        table {
+            min-width: 100%;
+            font-size: 12px;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 6px 8px;
+            text-align: center;
+            white-space: nowrap;
+            border: 1px solid #A6A6A6;
+        }
+
+        th {
+            position: sticky;
+            z-index: 10;
+            color: #FFFFFF;
+            background-color: #4D93D9;
+        }
+
+        thead tr:nth-child(1) th {
+            top: 0;
+            z-index: 12;
+        }
+
+        thead tr:nth-child(2) th {
+            top: 29px;
+            z-index: 11;
+        }
+
+        thead tr:nth-child(3) th {
+            top: 58px;
+            z-index: 10;
+        }
+
+        th.sticky-col,
+        td.sticky-col {
+            position: sticky;
+            left: 0;
+            z-index: 5;
+            font-weight: bold;
+            text-align: left;
+            background-color: #FFFFFF;
+        }
+
+        th.sticky-col-2,
+        td.sticky-col-2 {
+            position: sticky;
+            left: 80px;
+            z-index: 5;
+            text-align: left;
+            background-color: #FFFFFF;
+        }
+
+        thead th.sticky-col,
+        thead th.sticky-col-2 {
+            z-index: 15;
+            color: #333333;
+            background-color: #FFFFFF;
+            border: 1px solid #A6A6A6;
+        }
+
+        .subtotal-row {
+            font-weight: bold;
+            background-color: #D9D9D9 !important;
+        }
+
+        .total-general-row {
+            color: #FFFFFF !important;
+            font-weight: bold;
+            background-color: #4D93D9 !important;
+        }
+
+        .total-col {
+            font-weight: bold;
+            text-align: right;
+            background-color: #F2F5F8;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .sheet-title {
+            margin: 20px 0 10px;
+            color: #2B579A;
+            font-size: 1.2em;
+        }
+
+        .status-box {
+            grid-column: 1 / -1;
+            padding: 10px 12px;
+            color: #2B579A;
+            font-size: 13px;
+            background: #EAF2F8;
+            border: 1px solid #AED6F1;
+            border-radius: 4px;
+        }
+
+        .status-box.success {
+            color: #1E8449;
+            background: #EAFAF1;
+            border-color: #A9DFBF;
+        }
+
+        .status-box.error {
+            color: #922B21;
+            background: #FDECEA;
+            border-color: #F5B7B1;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h1>SICTEC - Reportes por 3 Hojas (PC, DCM, LAPTOP)</h1>
+
+        <div class="controls">
+
+            <div id="serviceStatus" class="status-box">
+                Preparando consulta al servicio...
+            </div>
+
+            <div class="control-group">
+                <label for="colR1">Filas Nivel 1:</label>
+                <input type="text" id="colR1" value="INICIALES">
+            </div>
+
+            <div class="control-group">
+                <label for="colR2">Filas Nivel 2:</label>
+                <input type="text" id="colR2" value="COORD_EST_DES">
+            </div>
+
+            <div class="control-group">
+                <label for="colC1">Columnas Nivel 1:</label>
+                <input type="text" id="colC1" value="MARCA">
+            </div>
+
+            <div class="control-group">
+                <label for="colC2">Columnas Nivel 2:</label>
+                <input type="text" id="colC2" value="MODELO">
+            </div>
+
+            <div class="control-group">
+                <label for="colC3">Columnas Nivel 3:</label>
+                <input type="text" id="colC3" value="ESTATUS_SICTEC">
+            </div>
+
+            <div class="buttons">
+                <button id="btnProcess">
+                    Actualizar información
+                </button>
+
+                <button id="btnDownload" class="success hidden">
+                    Descargar Excel (3 Hojas)
+                </button>
+            </div>
+
+        </div>
+
+        <div id="outputArea">
+            <p style="color: #666666; text-align: center;">
+                Consultando información de SICTEC...
+            </p>
+        </div>
+
+    </div>
+
+    <script>
+        let masterData = {};
+        let rawServiceData = [];
+
+        document
+            .getElementById("btnProcess")
+            .addEventListener("click", loadServiceData);
+
+        document
+            .getElementById("btnDownload")
+            .addEventListener("click", downloadExcel);
+
+        document.addEventListener("DOMContentLoaded", loadServiceData);
+
+
+        async function loadServiceData() {
+            const btn = document.getElementById("btnProcess");
+            const output = document.getElementById("outputArea");
+            const status = document.getElementById("serviceStatus");
+
+            try {
+                btn.disabled = true;
+                btn.textContent = "Consultando...";
+
+                status.className = "status-box";
+                status.textContent = "Consultando información desde IKTAN...";
+
+                output.innerHTML = `
+                    <p style="color: #666666; text-align: center;">
+                        Cargando información de SICTEC...
+                    </p>
+                `;
+
+                const response = await fetch(
+                    "/.netlify/functions/iktan?service=coral",
+                    {
+                        method: "GET",
+                        headers: {
+                            Accept: "application/json"
+                        },
+                        cache: "no-store"
+                    }
+                );
+
+                if (!response.ok) {
+                    let mensaje = "";
+
+                    try {
+                        mensaje = await response.text();
+                    } catch (e) {
+                        mensaje = "";
+                    }
+
+                    throw new Error(
+                        `Error HTTP ${response.status}` +
+                        (mensaje ? ` - ${mensaje}` : "")
+                    );
+                }
+
+                const responseData = await response.json();
+
+                if (!Array.isArray(responseData)) {
+                    throw new Error(
+                        "El servicio coral no regresó un arreglo JSON válido."
+                    );
+                }
+
+                rawServiceData = responseData.map(item => ({
+                    NUMERO_INVENTARIO: item.numero_inventario ?? "",
+                    CATEGORIA: item.categoria ?? "",
+                    CLASE: item.clase ?? "",
+                    MARCA: item.marca ?? "",
+                    MODELO: item.modelo ?? "",
+                    COORD_EST_DES: item.coord_est_des ?? "",
+                    DESC_AMBITO: item.desc_ambito ?? "",
+                    INICIALES: item.iniciales ?? "",
+                    ESTATUS_SICTEC: item.estatus_sistec ?? ""
+                }));
+
+                if (rawServiceData.length === 0) {
+                    status.className = "status-box error";
+                    status.textContent =
+                        "El servicio respondió correctamente, pero no regresó registros.";
+
+                    output.innerHTML = `
+                        <p style="color: #922B21; text-align: center;">
+                            No existen datos para generar la matriz.
+                        </p>
+                    `;
+
+                    document
+                        .getElementById("btnDownload")
+                        .classList.add("hidden");
+
+                    return;
+                }
+
+                const conf = {
+                    r1: document.getElementById("colR1").value.trim(),
+                    r2: document.getElementById("colR2").value.trim(),
+                    c1: document.getElementById("colC1").value.trim(),
+                    c2: document.getElementById("colC2").value.trim(),
+                    c3: document.getElementById("colC3").value.trim()
+                };
+
+                buildPivotStructure(rawServiceData, conf);
+                renderHTML();
+
+                document
+                    .getElementById("btnDownload")
+                    .classList.remove("hidden");
+
+                status.className = "status-box success";
+                status.textContent =
+                    `Información actualizada correctamente. ` +
+                    `${rawServiceData.length.toLocaleString("es-MX")} registros recibidos.`;
+
+                console.log(
+                    "Registros recibidos desde coral:",
+                    rawServiceData.length
+                );
+
+            } catch (error) {
+                console.error("Error consultando coral:", error);
+
+                status.className = "status-box error";
+                status.textContent =
+                    "No fue posible obtener la información del servicio.";
+
+                output.innerHTML = `
+                    <div
+                        style="
+                            padding: 20px;
+                            color: #922B21;
+                            background: #FDECEA;
+                            border: 1px solid #E74C3C;
+                            border-radius: 6px;
+                        "
+                    >
+                        <strong>Error al obtener los datos.</strong>
+                        <br><br>
+                        ${error.message}
+                    </div>
+                `;
+
+                document
+                    .getElementById("btnDownload")
+                    .classList.add("hidden");
+
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Actualizar información";
+            }
+        }
+
+
+        function mapClaseToSheet(clase) {
+            if (!clase) {
+                return "PC";
+            }
+
+            const c = clase
+                .toString()
+                .trim()
+                .toLowerCase();
+
+            if (
+                c.includes("computadora de escritorio") ||
+                c.includes("estación de trabajo") ||
+                c.includes("estacion de trabajo")
+            ) {
+                return "PC";
+            }
+
+            if (
+                c.includes("tableta") ||
+                c.includes("classmate") ||
+                c.includes("teléfono inteligente") ||
+                c.includes("telefono inteligente")
+            ) {
+                return "DCM";
+            }
+
+            if (
+                c.includes("computadora portátil") ||
+                c.includes("computadora portatil")
+            ) {
+                return "LAPTOP";
+            }
+
+            return "PC";
+        }
+
+
+        function sortR2Keys(r2Keys) {
+            return r2Keys.sort((a, b) => {
+                const aStr = a.toString().trim();
+                const bStr = b.toString().trim();
+
+                if (aStr.toLowerCase() === "regional") {
+                    return -1;
+                }
+
+                if (bStr.toLowerCase() === "regional") {
+                    return 1;
+                }
+
+                return aStr.localeCompare(bStr);
+            });
+        }
+
+
+        function buildPivotStructure(data, conf) {
+            masterData = {
+                PC: {
+                    pivot: {},
+                    colsTree: {}
+                },
+                DCM: {
+                    pivot: {},
+                    colsTree: {}
+                },
+                LAPTOP: {
+                    pivot: {},
+                    colsTree: {}
+                }
+            };
+
+            data.forEach(row => {
+                const sheet = mapClaseToSheet(row.CLASE);
+                const r1 = row[conf.r1] || "S/D";
+
+                const ambito = row.DESC_AMBITO
+                    ? row.DESC_AMBITO
+                        .toString()
+                        .trim()
+                        .toLowerCase()
+                    : "";
+
+                const entVal = row[conf.r2]
+                    ? row[conf.r2]
+                        .toString()
+                        .trim()
+                    : "";
+
+                let r2 = "";
+
+                if (ambito === "regional") {
+                    r2 = "Regional";
+                } else if (
+                    entVal !== "" &&
+                    entVal.toLowerCase() !== "regional"
+                ) {
+                    r2 = entVal;
+                } else {
+                    return;
+                }
+
+                const c1 = row[conf.c1] || "S/D";
+                const c2 = row[conf.c2] || "S/D";
+                const c3 = row[conf.c3] || "S/D";
+
+                const sData = masterData[sheet];
+
+                if (!sData.pivot[r1]) {
+                    sData.pivot[r1] = {};
+                }
+
+                if (!sData.pivot[r1][r2]) {
+                    sData.pivot[r1][r2] = {};
+                }
+
+                if (!sData.pivot[r1][r2][c1]) {
+                    sData.pivot[r1][r2][c1] = {};
+                }
+
+                if (!sData.pivot[r1][r2][c1][c2]) {
+                    sData.pivot[r1][r2][c1][c2] = {};
+                }
+
+                sData.pivot[r1][r2][c1][c2][c3] =
+                    (sData.pivot[r1][r2][c1][c2][c3] || 0) + 1;
+
+                if (!sData.colsTree[c1]) {
+                    sData.colsTree[c1] = {};
+                }
+
+                if (!sData.colsTree[c1][c2]) {
+                    sData.colsTree[c1][c2] = new Set();
+                }
+
+                sData.colsTree[c1][c2].add(c3);
+            });
+        }
+
+
+        function renderHTML() {
+            const out = document.getElementById("outputArea");
+
+            out.innerHTML = "";
+
+            for (const [sheetName, sData] of Object.entries(masterData)) {
+                if (Object.keys(sData.pivot).length === 0) {
+                    continue;
+                }
+
+                const wrapper = document.createElement("div");
+
+                wrapper.innerHTML = `
+                    <div class="sheet-title">
+                        Hoja: ${sheetName}
+                    </div>
+                `;
+
+                const tableContainer = document.createElement("div");
+                tableContainer.className = "table-responsive";
+
+                let html = "<table><thead>";
+
+                const c1Keys = Object
+                    .keys(sData.colsTree)
+                    .sort();
+
+                const colLeaves = [];
+
+                let tr1 = `
+                    <tr>
+                        <th
+                            rowspan="3"
+                            class="sticky-col"
+                            style="min-width: 80px; background: #FFFFFF;"
+                        ></th>
+
+                        <th
+                            rowspan="3"
+                            class="sticky-col-2"
+                            style="min-width: 150px; background: #FFFFFF;"
+                        ></th>
+                `;
+
+                let tr2 = "<tr>";
+                let tr3 = "<tr>";
+
+                c1Keys.forEach(c1 => {
+                    const c2Keys = Object
+                        .keys(sData.colsTree[c1])
+                        .sort();
+
+                    let c1Colspan = 0;
+
+                    c2Keys.forEach(c2 => {
+                        const c3Keys = Array
+                            .from(sData.colsTree[c1][c2])
+                            .sort();
+
+                        tr2 += `
+                            <th colspan="${c3Keys.length}">
+                                ${c2}
+                            </th>
+                        `;
+
+                        c1Colspan += c3Keys.length;
+
+                        c3Keys.forEach(c3 => {
+                            tr3 += `
+                                <th>
+                                    ${c3}
+                                </th>
+                            `;
+
+                            colLeaves.push({
+                                c1,
+                                c2,
+                                c3
+                            });
+                        });
+                    });
+
+                    tr1 += `
+                        <th colspan="${c1Colspan}">
+                            ${c1}
+                        </th>
+                    `;
+                });
+
+                tr1 += `
+                    <th
+                        rowspan="3"
+                        style="
+                            min-width: 100px;
+                            color: #FFFFFF;
+                            background: #4D93D9;
+                        "
+                    >
+                        Total general
+                    </th>
+                `;
+
+                tr1 += "</tr>";
+                tr2 += "</tr>";
+                tr3 += "</tr>";
+
+                html += tr1 + tr2 + tr3 + "</thead><tbody>";
+
+                const r1Keys = Object
+                    .keys(sData.pivot)
+                    .sort();
+
+                const grandTotalArr = new Array(colLeaves.length).fill(0);
+
+                let absoluteTotal = 0;
+
+                r1Keys.forEach(r1 => {
+                    const r2Keys = sortR2Keys(
+                        Object.keys(sData.pivot[r1])
+                    );
+
+                    const subtotalArr =
+                        new Array(colLeaves.length).fill(0);
+
+                    let subtotalRowSum = 0;
+
+                    r2Keys.forEach((r2, idx) => {
+                        const isFirst = idx === 0;
+
+                        const isRegional =
+                            r2
+                                .toString()
+                                .trim()
+                                .toLowerCase() === "regional";
+
+                        html += "<tr>";
+
+                        html += `
+                            <td class="sticky-col">
+                                ${isFirst ? r1 : ""}
+                            </td>
+                        `;
+
+                        html += `
+                            <td
+                                class="sticky-col-2"
+                                ${isRegional ? 'style="font-weight: bold;"' : ""}
+                            >
+                                ${r2}
+                            </td>
+                        `;
+
+                        let rowSum = 0;
+
+                        colLeaves.forEach((leaf, colIdx) => {
+                            const val =
+                                sData.pivot[r1]
+                                    ?.[r2]
+                                    ?.[leaf.c1]
+                                    ?.[leaf.c2]
+                                    ?.[leaf.c3];
+
+                            if (val) {
+                                subtotalArr[colIdx] += val;
+                                grandTotalArr[colIdx] += val;
+                                rowSum += val;
+                                subtotalRowSum += val;
+                                absoluteTotal += val;
+                            }
+
+                            html += `
+                                <td>
+                                    ${
+                                        val
+                                            ? val.toLocaleString("es-MX")
+                                            : ""
+                                    }
+                                </td>
+                            `;
+                        });
+
+                        html += `
+                            <td class="total-col">
+                                ${
+                                    rowSum > 0
+                                        ? rowSum.toLocaleString("es-MX")
+                                        : ""
+                                }
+                            </td>
+                        `;
+
+                        html += "</tr>";
+                    });
+
+                    html += `
+                        <tr class="subtotal-row">
+                            <td class="sticky-col">
+                                Total ${r1}
+                            </td>
+
+                            <td class="sticky-col-2"></td>
+                    `;
+
+                    subtotalArr.forEach(val => {
+                        html += `
+                            <td>
+                                ${
+                                    val > 0
+                                        ? val.toLocaleString("es-MX")
+                                        : ""
+                                }
+                            </td>
+                        `;
+                    });
+
+                    html += `
+                            <td style="text-align: right;">
+                                ${
+                                    subtotalRowSum > 0
+                                        ? subtotalRowSum.toLocaleString("es-MX")
+                                        : ""
+                                }
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                html += `
+                    <tr class="total-general-row">
+                        <td
+                            colspan="2"
+                            style="
+                                color: #FFFFFF;
+                                text-align: left;
+                                background-color: #4D93D9;
+                            "
+                        >
+                            Total general
+                        </td>
+                `;
+
+                grandTotalArr.forEach(val => {
+                    html += `
+                        <td
+                            style="
+                                color: #FFFFFF;
+                                background-color: #4D93D9;
+                            "
+                        >
+                            ${
+                                val > 0
+                                    ? val.toLocaleString("es-MX")
+                                    : ""
+                            }
+                        </td>
+                    `;
+                });
+
+                html += `
+                        <td
+                            style="
+                                color: #FFFFFF;
+                                text-align: right;
+                                background-color: #4D93D9;
+                            "
+                        >
+                            ${
+                                absoluteTotal > 0
+                                    ? absoluteTotal.toLocaleString("es-MX")
+                                    : ""
+                            }
+                        </td>
+                    </tr>
+                `;
+
+                html += "</tbody></table>";
+
+                tableContainer.innerHTML = html;
+
+                wrapper.appendChild(tableContainer);
+                out.appendChild(wrapper);
+
+                sData.colLeaves = colLeaves;
+            }
+
+            if (out.children.length === 0) {
+                out.innerHTML = `
+                    <p
+                        style="
+                            color: #922B21;
+                            text-align: center;
+                        "
+                    >
+                        Se recibieron registros, pero ninguno pudo
+                        clasificarse en PC, DCM o LAPTOP.
+                    </p>
+                `;
+            }
+        }
+
+
+        async function downloadExcel() {
+            const btn = document.getElementById("btnDownload");
+
+            btn.textContent = "Procesando...";
+            btn.disabled = true;
+
+            try {
+                const wb = new ExcelJS.Workbook();
+
+                const thinBorder = {
+                    top: {
+                        style: "thin",
+                        color: {
+                            argb: "FF808080"
+                        }
+                    },
+                    left: {
+                        style: "thin",
+                        color: {
+                            argb: "FF808080"
+                        }
+                    },
+                    bottom: {
+                        style: "thin",
+                        color: {
+                            argb: "FF808080"
+                        }
+                    },
+                    right: {
+                        style: "thin",
+                        color: {
+                            argb: "FF808080"
+                        }
+                    }
+                };
+
+                for (const [sheetName, sData] of Object.entries(masterData)) {
+                    if (Object.keys(sData.pivot).length === 0) {
+                        continue;
+                    }
+
+                    const ws = wb.addWorksheet(sheetName);
+
+                    ws.addRow([]);
+                    ws.addRow([]);
+                    ws.addRow([]);
+
+                    [
+                        "A1",
+                        "A2",
+                        "A3",
+                        "B1",
+                        "B2",
+                        "B3"
+                    ].forEach(cellKey => {
+                        const cell = ws.getCell(cellKey);
+
+                        cell.value = null;
+                        cell.border = thinBorder;
+                    });
+
+                    ws.mergeCells("A1:A3");
+                    ws.mergeCells("B1:B3");
+
+                    let colIndex = 3;
+
+                    const c1Keys = Object
+                        .keys(sData.colsTree)
+                        .sort();
+
+                    let toggleColor = false;
+
+                    c1Keys.forEach(c1 => {
+                        const startC1 = colIndex;
+
+                        const c2Keys = Object
+                            .keys(sData.colsTree[c1])
+                            .sort();
+
+                        const currentHex =
+                            toggleColor
+                                ? "FFA6C9EC"
+                                : "FF4D93D9";
+
+                        const currentFontColor =
+                            toggleColor
+                                ? "FF000000"
+                                : "FFFFFFFF";
+
+                        c2Keys.forEach(c2 => {
+                            const startC2 = colIndex;
+
+                            const c3Keys = Array
+                                .from(sData.colsTree[c1][c2])
+                                .sort();
+
+                            c3Keys.forEach(c3 => {
+                                const cCell1 = ws.getCell(1, colIndex);
+                                const cCell2 = ws.getCell(2, colIndex);
+                                const cCell3 = ws.getCell(3, colIndex);
+
+                                cCell1.value = c1;
+                                cCell2.value = c2;
+                                cCell3.value = c3;
+
+                                [
+                                    cCell1,
+                                    cCell2,
+                                    cCell3
+                                ].forEach(c => {
+                                    c.font = {
+                                        bold: true,
+                                        color: {
+                                            argb: currentFontColor
+                                        }
+                                    };
+
+                                    c.alignment = {
+                                        horizontal: "center",
+                                        vertical: "middle"
+                                    };
+
+                                    c.border = thinBorder;
+
+                                    c.fill = {
+                                        type: "pattern",
+                                        pattern: "solid",
+                                        fgColor: {
+                                            argb: currentHex
+                                        }
+                                    };
+                                });
+
+                                colIndex++;
+                            });
+
+                            if (colIndex - 1 > startC2) {
+                                ws.mergeCells(
+                                    2,
+                                    startC2,
+                                    2,
+                                    colIndex - 1
+                                );
+                            }
+                        });
+
+                        if (colIndex - 1 > startC1) {
+                            ws.mergeCells(
+                                1,
+                                startC1,
+                                1,
+                                colIndex - 1
+                            );
+                        }
+
+                        toggleColor = !toggleColor;
+                    });
+
+                    const tgCell1 = ws.getCell(1, colIndex);
+                    const tgCell2 = ws.getCell(2, colIndex);
+                    const tgCell3 = ws.getCell(3, colIndex);
+
+                    tgCell1.value = "Total general";
+
+                    [
+                        tgCell1,
+                        tgCell2,
+                        tgCell3
+                    ].forEach(c => {
+                        c.font = {
+                            bold: true,
+                            color: {
+                                argb: "FFFFFFFF"
+                            }
+                        };
+
+                        c.alignment = {
+                            horizontal: "center",
+                            vertical: "middle"
+                        };
+
+                        c.border = thinBorder;
+
+                        c.fill = {
+                            type: "pattern",
+                            pattern: "solid",
+                            fgColor: {
+                                argb: "FF215C98"
+                            }
+                        };
+                    });
+
+                    ws.mergeCells(
+                        1,
+                        colIndex,
+                        3,
+                        colIndex
+                    );
+
+                    const totalCols = colIndex;
+
+                    let currentRow = 4;
+
+                    const grandTotalArr =
+                        new Array(sData.colLeaves.length).fill(0);
+
+                    let absoluteTotal = 0;
+
+                    const r1Keys = Object
+                        .keys(sData.pivot)
+                        .sort();
+
+                    r1Keys.forEach(r1 => {
+                        const r2Keys = sortR2Keys(
+                            Object.keys(sData.pivot[r1])
+                        );
+
+                        const subtotalArr =
+                            new Array(sData.colLeaves.length).fill(0);
+
+                        let subtotalRowSum = 0;
+                        const startRow = currentRow;
+
+                        r2Keys.forEach((r2, idx) => {
+                            const rowData = [
+                                idx === 0 ? r1 : null,
+                                r2
+                            ];
+
+                            let rowSum = 0;
+
+                            sData.colLeaves.forEach((leaf, colIdx) => {
+                                const val =
+                                    sData.pivot[r1]
+                                        ?.[r2]
+                                        ?.[leaf.c1]
+                                        ?.[leaf.c2]
+                                        ?.[leaf.c3] || null;
+
+                                rowData.push(val);
+
+                                if (val) {
+                                    subtotalArr[colIdx] += val;
+                                    grandTotalArr[colIdx] += val;
+                                    rowSum += val;
+                                    subtotalRowSum += val;
+                                    absoluteTotal += val;
+                                }
+                            });
+
+                            rowData.push(
+                                rowSum > 0
+                                    ? rowSum
+                                    : null
+                            );
+
+                            const row = ws.addRow(rowData);
+
+                            currentRow++;
+
+                            const isRegional =
+                                r2
+                                    .toString()
+                                    .trim()
+                                    .toLowerCase() === "regional";
+
+                            for (let c = 1; c <= totalCols; c++) {
+                                const cell = row.getCell(c);
+
+                                cell.border = thinBorder;
+
+                                if (c === 2 && isRegional) {
+                                    cell.font = {
+                                        bold: true
+                                    };
+                                }
+
+                                if (c > 2) {
+                                    if (
+                                        cell.value !== null &&
+                                        cell.value !== ""
+                                    ) {
+                                        cell.numFmt = "#,##0";
+
+                                        cell.alignment = {
+                                            horizontal: "right",
+                                            vertical: "middle"
+                                        };
+                                    } else {
+                                        cell.alignment = {
+                                            horizontal: "center",
+                                            vertical: "middle"
+                                        };
+                                    }
+                                } else {
+                                    cell.alignment = {
+                                        horizontal: "left",
+                                        vertical: "middle"
+                                    };
+                                }
+                            }
+                        });
+
+                        const endRow = currentRow - 1;
+
+                        if (endRow > startRow) {
+                            ws.mergeCells(
+                                startRow,
+                                1,
+                                endRow,
+                                1
+                            );
+                        }
+
+                        for (
+                            let r = startRow;
+                            r <= endRow;
+                            r++
+                        ) {
+                            const cell = ws.getCell(r, 1);
+
+                            cell.border = thinBorder;
+
+                            cell.alignment = {
+                                horizontal: "left",
+                                vertical: "middle"
+                            };
+                        }
+
+                        const subRowData = [
+                            `Total ${r1}`,
+                            null,
+                            ...subtotalArr.map(
+                                v => v > 0 ? v : null
+                            ),
+                            subtotalRowSum > 0
+                                ? subtotalRowSum
+                                : null
+                        ];
+
+                        const subRow = ws.addRow(subRowData);
+
+                        currentRow++;
+
+                        for (let c = 1; c <= totalCols; c++) {
+                            const cell = subRow.getCell(c);
+
+                            cell.font = {
+                                bold: true
+                            };
+
+                            cell.fill = {
+                                type: "pattern",
+                                pattern: "solid",
+                                fgColor: {
+                                    argb: "FFD9D9D9"
+                                }
+                            };
+
+                            cell.border = thinBorder;
+
+                            if (
+                                c > 2 &&
+                                cell.value !== null
+                            ) {
+                                cell.numFmt = "#,##0";
+
+                                cell.alignment = {
+                                    horizontal: "right",
+                                    vertical: "middle"
+                                };
+                            } else {
+                                cell.alignment = {
+                                    horizontal: "left",
+                                    vertical: "middle"
+                                };
+                            }
+                        }
+                    });
+
+                    const grandRowData = [
+                        "Total general",
+                        null,
+                        ...grandTotalArr.map(
+                            v => v > 0 ? v : null
+                        ),
+                        absoluteTotal > 0
+                            ? absoluteTotal
+                            : null
+                    ];
+
+                    const grandRow = ws.addRow(grandRowData);
+
+                    ws.mergeCells(
+                        currentRow,
+                        1,
+                        currentRow,
+                        2
+                    );
+
+                    currentRow++;
+
+                    for (let c = 1; c <= totalCols; c++) {
+                        const cell = grandRow.getCell(c);
+
+                        cell.font = {
+                            bold: true,
+                            color: {
+                                argb: "FFFFFFFF"
+                            }
+                        };
+
+                        cell.fill = {
+                            type: "pattern",
+                            pattern: "solid",
+                            fgColor: {
+                                argb: "FF4D93D9"
+                            }
+                        };
+
+                        cell.border = thinBorder;
+
+                        if (
+                            c > 2 &&
+                            cell.value !== null
+                        ) {
+                            cell.numFmt = "#,##0";
+
+                            cell.alignment = {
+                                horizontal: "right",
+                                vertical: "middle"
+                            };
+                        } else {
+                            cell.alignment = {
+                                horizontal: "left",
+                                vertical: "middle"
+                            };
+                        }
+                    }
+
+                    ws.getColumn(1).width = 15;
+                    ws.getColumn(2).width = 25;
+
+                    for (let i = 3; i <= totalCols; i++) {
+                        ws.getColumn(i).width = 12;
+                    }
+                }
+
+                const now = new Date();
+
+                const pad = n =>
+                    String(n).padStart(2, "0");
+
+                const dd = pad(now.getDate());
+                const mm = pad(now.getMonth() + 1);
+                const aaaa = now.getFullYear();
+                const hh = pad(now.getHours());
+                const min = pad(now.getMinutes());
+                const ss = pad(now.getSeconds());
+
+                const fileName =
+                    `SICTEC_Clasificado_${dd}_${mm}_${aaaa}_${hh}_${min}_${ss}.xlsx`;
+
+                const buffer = await wb.xlsx.writeBuffer();
+
+                saveAs(
+                    new Blob([buffer]),
+                    fileName
+                );
+
+            } catch (error) {
+                console.error(
+                    "Error generando Excel:",
+                    error
+                );
+
+                alert(
+                    "No fue posible generar el archivo Excel."
+                );
+
+            } finally {
+                btn.textContent = "Descargar Excel (3 Hojas)";
+                btn.disabled = false;
+            }
+        }
+    </script>
+
+</body>
+
+</html>
