@@ -348,15 +348,14 @@
                 }
 
                 rawServiceData = responseData.map(item => ({
-                    NUMERO_INVENTARIO: item.numero_inventario ?? "",
-                    CATEGORIA: item.categoria ?? "",
                     CLASE: item.clase ?? "",
                     MARCA: item.marca ?? "",
                     MODELO: item.modelo ?? "",
                     COORD_EST_DES: item.coord_est_des ?? "",
                     DESC_AMBITO: item.desc_ambito ?? "",
                     INICIALES: item.iniciales ?? "",
-                    ESTATUS_SICTEC: item.estatus_sistec ?? ""
+                    ESTATUS_SICTEC: item.estatus_sistec ?? "",
+                    TOTAL: Number(item.total) || 0
                 }));
 
                 if (rawServiceData.length === 0) {
@@ -393,9 +392,15 @@
                     .classList.remove("hidden");
 
                 status.className = "status-box success";
+                const totalEquipos = rawServiceData.reduce(
+                    (sum, item) => sum + item.TOTAL,
+                    0
+                );
+
                 status.textContent =
                     `Información actualizada correctamente. ` +
-                    `${rawServiceData.length.toLocaleString("es-MX")} registros recibidos.`;
+                    `${totalEquipos.toLocaleString("es-MX")} equipos procesados ` +
+                    `en ${rawServiceData.length.toLocaleString("es-MX")} grupos.`;
 
                 console.log(
                     "Registros recibidos desde coral:",
@@ -561,7 +566,7 @@
                 }
 
                 sData.pivot[r1][r2][c1][c2][c3] =
-                    (sData.pivot[r1][r2][c1][c2][c3] || 0) + 1;
+                    (sData.pivot[r1][r2][c1][c2][c3] || 0) + row.TOTAL;
 
                 if (!sData.colsTree[c1]) {
                     sData.colsTree[c1] = {};
